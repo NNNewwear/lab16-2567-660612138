@@ -1,5 +1,6 @@
 import { DB } from "@lib/DB";
 import {
+  zStudentDeleteBody,
   zStudentGetParam,
   zStudentPostBody,
   zStudentPutBody,
@@ -31,6 +32,9 @@ export const GET = async (request: NextRequest) => {
   }
 
   //filter by student id here
+  if (studentId !== null){
+    filtered = filtered.filter((student) => student.studentId === studentId);
+  }
 
   return NextResponse.json({ ok: true, students: filtered });
 };
@@ -98,9 +102,35 @@ export const PUT = async (request: NextRequest) => {
 
 export const DELETE = async (request: NextRequest) => {
   //get body and validate it
-
+  const body = await request.json();
   //check if student id exist
+  const parseResult = zStudentDeleteBody.safeParse(body);
+  if (parseResult.success === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: parseResult.error.issues[0].message,
+      },
+      { status: 400 }
+    );
+  }
 
+  const foundIndex = DB.students.findIndex(
+    (std) => std.studentId === body.studentId
+  );
+  if (foundIndex === -1) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Student ID does not exist",
+      },
+      { status: 404 }
+    );
+  }
+
+  DB.students = DB.students.filter((std) => {
+    return std.studentId !== body.studentId
+  });
   //perform removing student from DB. You can choose from 2 choices
   //1. use array filter method
   // DB.students = DB.students.filter(...);
@@ -110,6 +140,6 @@ export const DELETE = async (request: NextRequest) => {
 
   return NextResponse.json({
     ok: true,
-    message: `Student Id xxx has been deleted`,
+    message: `Student Id ${body.studentId} has been deleted`,
   });
 };
